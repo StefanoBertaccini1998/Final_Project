@@ -1,0 +1,71 @@
+# ======================
+# DATASET — non committare mai (troppo pesante)
+# ======================
+data/mvtec_ad/
+data/*.zip
+data/*.tar
+data/*.gz
+
+# ======================
+# AMBIENTE VIRTUALE
+# ======================
+venv/
+.venv/
+env/
+.env
+
+# ======================
+# PYTHON
+# ======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ======================
+# MODELLI SALVATI (pesanti — opzionale)
+# ======================
+outputs/checkpoints/*.pt
+outputs/checkpoints/*.pth
+outputs/checkpoints/*.pkl
+# Rimuovi le righe sopra se vuoi committare i modelli
+
+# ======================
+# JUPYTER
+# ======================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ======================
+# IDE
+# ======================
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ======================
+# SISTEMA
+# ======================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ======================
+# KAGGLE CREDENTIALS — mai su GitHub!
+# ======================
+.kaggle/
+kaggle.json
+access_token
+
+# ======================
+# OUTPUT TEMPORANEI
+# ======================
+outputs/results/temp_*
+*.log

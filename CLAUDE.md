@@ -113,12 +113,18 @@ python src/check_setup.py
 - `.gitignore` aggiornato: escluso `.claude/`
 - `CLAUDE.md`: aggiunte decisioni di design (per-category evaluation, Bergmann et al.)
 
-### ⬜ Next Step — Commit 4
-Implementare e validare il baseline classico:
-- `src/features.py`: estrarre features HOG da tutto il dataset `metal_nut`
-- `src/models/classical.py`: trainare SVM con StandardScaler
-- `notebooks/02_classical_baseline.ipynb`: run completo con metriche accuracy e F1
-- Risultati da loggare in `outputs/results/`
+### ✅ Done (Commit 4 — classical baseline HOG + SVM)
+- `src/features.py`: HOG constants (ORIENTATIONS=9, PIXELS_PER_CELL=8×8, CELLS_PER_BLOCK=2×2) + WHY documentato
+- `src/models/classical.py`: SVM RBF C=1.0 + StandardScaler, `predict_proba()` aggiunto
+- `notebooks/03_classical_baseline.ipynb`: dataset split stratificato 70/30, HOG visualization, training, confusion matrix
+- **Risultati metal_nut**: Accuracy 83.2% | F1 0.605 | Recall difetti 46% (15/28 mancati)
+- Interpretazione: SVM+HOG cattura la forma globale ma manca i difetti locali sottili — giustifica EfficientNet
+
+### ⬜ Next Step — Commit 5
+Implementare il modulo di valutazione:
+- `src/evaluate.py`: accuracy, precision, recall, F1, confusion matrix con output formattato
+- Funzioni riusabili da entrambi i pipeline (HOG+SVM e EfficientNet)
+- Metriche di segmentazione (IoU, Dice) per uso futuro
 
 ---
 
@@ -129,8 +135,8 @@ Implementare e validare il baseline classico:
 | 1 | `feat: initial project setup` | ✅ |
 | 2 | `feat: dataset loader and exploratory analysis` | ✅ |
 | 3 | `feat: preprocessing pipeline` | ✅ |
-| 4 | `feat: classical baseline HOG + SVM` | ⬜ Next |
-| 5 | `feat: evaluation module` | ⬜ |
+| 4 | `feat: classical baseline HOG + SVM` | ✅ |
+| 5 | `feat: evaluation module` | ⬜ Next |
 | 6 | `feat: EfficientNet fine-tuning` | ⬜ |
 | 7 | `feat: model comparison and results` | ⬜ |
 | 8 | `feat: ROI zone check post-processing` | ⬜ |

@@ -159,11 +159,19 @@ python src/check_setup.py
 - Confronto metal_nut: HOG F1=0.605 vs EfficientNet t=0.3 F1=0.784 incluso nel notebook
 - Segue protocollo benchmark Bergmann et al. (2021)
 
-### ⬜ Next Step — Commit 10
-End-to-end pipeline integration in `src/main.py`:
-- CLI: `python src/main.py --image <path> --category metal_nut --model hog`
-- Orchestrazione: preprocess → extract features → classify → ROI check → verdict
-- Argomenti: `--image`, `--category`, `--model` (hog | efficientnet), `--threshold`
+### ✅ Done (Commit 10 — end-to-end pipeline integration)
+- `src/main.py`: CLI che orchestra tutti e 4 gli stage in sequenza
+- Argomenti: `--image`, `--category`, `--model` (hog|efficientnet), `--threshold`, `--checkpoint`, `--save-checkpoint`, `--roi-margin`
+- HOG+SVM: train on-the-fly o carica da checkpoint (.pkl)
+- EfficientNet: carica checkpoint .pt salvato da notebook 05 (training troppo lento per CLI)
+- Testato: PASS su buona parte (prob=1.5%), REJECT su difettosa (prob=100%)
+- `--roi-margin 0.05` per immagini MVTec close-up (default 0.20 per camere wide-field)
+
+### ⬜ Next Step — Commit 11
+Documentazione tecnica e README finale:
+- `docs/paper_draft.md`: completare sezione 3 con i numeri reali (mean F1 per-category, confronto HOG vs EfficientNet)
+- `README.md`: setup, architettura, risultati, come usare main.py
+- Revisione docstring e commenti nei moduli src/
 
 ---
 
@@ -180,8 +188,8 @@ End-to-end pipeline integration in `src/main.py`:
 | 7 | `feat: model comparison and results` | ✅ |
 | 8 | `feat: ROI zone check post-processing` | ✅ |
 | 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ✅ |
-| 10 | `feat: end-to-end pipeline integration` | ⬜ Next |
-| 11 | `docs: technical analysis and README` | ⬜ |
+| 10 | `feat: end-to-end pipeline integration` | ✅ |
+| 11 | `docs: technical analysis and README` | ⬜ Next |
 | 12 | `feat: error analysis by defect type (optional)` | ⬜ optional |
 | 13 | `feat: Gradio demo (optional)` | ⬜ optional |
 

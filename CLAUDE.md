@@ -144,11 +144,18 @@ python src/check_setup.py
 - Curva PR dimostra EfficientNet superiore a qualsiasi soglia
 - Sweet spot identificato: t=0.3 (recall +14%, precision 87%)
 
-### ⬜ Next Step — Commit 8
-Implementare ROI zone check (post-processing):
-- `src/postprocessing.py`: definizione ROI, boundary check, overlay visivo
-- `notebooks/07_postprocessing.ipynb`: visualizzazione zone check su immagini reali
-- Integrazione con output del classificatore
+### ✅ Done (Commit 8 — ROI zone check post-processing)
+- `src/postprocessing.py`: `define_roi()`, `find_part_bbox()`, `check_roi()`, `draw_overlay()` con color coding
+- `notebooks/07_postprocessing.ipynb`: ROI visualization, part localization, out-of-position simulation
+- Caso simulato funziona correttamente (parte spostata → magenta OUT OF POSITION)
+- Nota design: margine 20% progettato per camere wide-field; per MVTec close-up ridurre a 5%
+- Concetto dimostrato e limitazione documentata per il paper
+
+### ⬜ Next Step — Commit 9
+Per-category evaluation su tutte le 15 categorie MVTec:
+- Loop HOG+SVM su tutte le categorie → tabella aggregata
+- `notebooks/08_per_category_evaluation.ipynb`: risultati per categoria + mean F1
+- Segue protocollo benchmark Bergmann et al. (2021)
 
 ---
 
@@ -163,8 +170,8 @@ Implementare ROI zone check (post-processing):
 | 5 | `feat: evaluation module` | ✅ |
 | 6 | `feat: EfficientNet fine-tuning` | ✅ |
 | 7 | `feat: model comparison and results` | ✅ |
-| 8 | `feat: ROI zone check post-processing` | ⬜ Next |
-| 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ |
+| 8 | `feat: ROI zone check post-processing` | ✅ |
+| 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ Next |
 | 10 | `feat: end-to-end pipeline integration` | ⬜ |
 | 11 | `docs: technical analysis and README` | ⬜ |
 | 12 | `feat: error analysis by defect type (optional)` | ⬜ optional |

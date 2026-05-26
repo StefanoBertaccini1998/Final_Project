@@ -175,11 +175,19 @@ python src/check_setup.py
   - Sezione 4: failure analysis (HOG failure modes, EfficientNet bias, ROI limitation, proposed improvements)
   - Appendix Decision Log: 14 decisioni documentate con alternatives considered
 
-### ⬜ Next Step — Commit 12 (opzionale)
-EfficientNet per-category su categorie dove HOG fallisce:
-- Girare EfficientNet su 6 categorie texture (carpet, leather, wood, tile, grid, cable)
-- Confronto HOG vs EfficientNet per categoria in notebook 09
-- Dimostra che le feature learned generalizzano dove HOG fallisce
+### ✅ Done (Commit 12 — EfficientNet su categorie texture)
+- `notebooks/09_efficientnet_texture_categories.ipynb`: EfficientNet-B0 su 6 categorie dove HOG score F1=0.000
+- Categorie: carpet, leather, wood, tile, grid, cable
+- Stessa strategia two-phase di notebook 05 (10+10 epoche, lr 1e-3 / 1e-5)
+- Tabella comparativa HOG vs EfficientNet + threshold tuning a t=0.3
+- Runtime ~30 min (da eseguire localmente)
+- Analisi: HOG fallisce su color/texture anomaly, EfficientNet generalizza grazie a feature apprese
+
+### ⬜ Next Step — Commit 13 (opzionale)
+Demo interattiva Gradio:
+- `app.py`: interfaccia web — upload immagine, selezione categoria e modello, output verdict
+- Visualizzazione overlay ROI + bounding box
+- Deploy-ready per HuggingFace Spaces
 
 ---
 
@@ -198,8 +206,8 @@ EfficientNet per-category su categorie dove HOG fallisce:
 | 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ✅ |
 | 10 | `feat: end-to-end pipeline integration` | ✅ |
 | 11 | `docs: technical analysis and README` | ✅ |
-| 12 | `feat: error analysis by defect type (optional)` | ⬜ Next (opt) |
-| 13 | `feat: Gradio demo (optional)` | ⬜ optional |
+| 12 | `feat: EfficientNet on texture categories` | ✅ |
+| 13 | `feat: Gradio demo (optional)` | ⬜ Next (opt) |
 
 Full details in `COMMITS.md`.
 

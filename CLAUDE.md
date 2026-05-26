@@ -127,12 +127,19 @@ python src/check_setup.py
 - `notebooks/04_evaluation_module.ipynb`: demo su risultati HOG+SVM, spiegazione scelte metriche
 - Smoke test verificato: output corretto su input sintetici
 
-### ⬜ Next Step — Commit 6
-Implementare EfficientNet-B0 fine-tuning:
-- `src/models/deep.py`: DeepClassifier con backbone EfficientNet-B0 + custom head
-- Training loop con GPU (RTX 5070): Phase 1 (head only) → Phase 2 (full network)
-- Early stopping e checkpointing in `outputs/checkpoints/`
-- `notebooks/04_deep_learning.ipynb`: training curves (loss/accuracy per epoch) + risultati
+### ✅ Done (Commit 6 — EfficientNet-B0 fine-tuning)
+- `src/dataset.py`: aggiunto `MVTecTorchDataset` — PyTorch Dataset con torchvision transforms
+- `src/models/deep.py`: già completo; `DeepClassifier` verificato (328K trainable in Phase 1, 4.3M in Phase 2)
+- `notebooks/05_deep_learning.ipynb`: training loop 2 fasi, training curves, evaluation, confronto baseline
+- **Risultati metal_nut**: Accuracy 85.1% | F1 0.634 | Precision 1.000 | Recall difetti 46%
+- Analisi: precision perfetta (zero falsi allarmi) ma recall identica a SVM — causa: class imbalance + CrossEntropyLoss non pesata
+- Proposta miglioramento documentata: class-weighted loss o threshold tuning
+
+### ⬜ Next Step — Commit 7
+Confronto modelli e risultati finali:
+- `notebooks/06_model_comparison.ipynb`: tabella comparativa HOG+SVM vs EfficientNet, confusion matrices affiancate, analisi gap
+- Aggiornare `docs/paper_draft.md` sezione 3 (Experimental Results) con i numeri reali
+- Proposta class-weighted loss per migliorare recall difetti
 
 ---
 
@@ -145,8 +152,8 @@ Implementare EfficientNet-B0 fine-tuning:
 | 3 | `feat: preprocessing pipeline` | ✅ |
 | 4 | `feat: classical baseline HOG + SVM` | ✅ |
 | 5 | `feat: evaluation module` | ✅ |
-| 6 | `feat: EfficientNet fine-tuning` | ⬜ Next |
-| 7 | `feat: model comparison and results` | ⬜ |
+| 6 | `feat: EfficientNet fine-tuning` | ✅ |
+| 7 | `feat: model comparison and results` | ⬜ Next |
 | 8 | `feat: ROI zone check post-processing` | ⬜ |
 | 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ |
 | 10 | `feat: end-to-end pipeline integration` | ⬜ |

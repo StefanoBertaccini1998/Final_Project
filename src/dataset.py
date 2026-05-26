@@ -177,6 +177,66 @@ class MVTecDataset:
         return names if not self.binary else ["good", "defective"]
 
 
+class MVTecTorchDataset:
+    """PyTorch-compatible Dataset for MVTec AD.
+
+    Returns (tensor, label) pairs ready for DataLoader. Applies torchvision
+    transforms so augmentation runs on GPU-bound DataLoader workers.
+
+    Why separate from MVTecDataset?
+      MVTecDataset returns numpy arrays — useful for the HOG+SVM pipeline
+      which does not use PyTorch. This class wraps the same images with
+      torchvision transforms for the EfficientNet pipeline.
+
+    Args:
+        image_paths: List of image file paths.
+        labels: List of integer labels (0=good, 1=defective).
+        transform: torchvision Compose transform (use get_transforms()).
+    """
+
+    def __init__(self, image_paths: List[str], labels: List[int], transform=None):
+        self.image_paths = image_paths
+        self.labels      = labels
+        self.transform   = transform
+
+    def __len__(self) -> int:
+        return len(self.image_paths)
+
+    def __getitem__(self, idx: int):
+        import torch
+        img = cv2.imread(self.image_paths[idx])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        if self.transform:
+            img = self.transform(img)
+        return img, torch.tensor(self.labels[idx], dtype=torch.long)
+
+    @staticmethod
+    def collect_paths(category_path: Path) -> Tuple[List[str], List[int]]:
+        """Collect all image paths and labels from a MVTec category directory.
+
+        Combines train/good + test/good (label=0) and all test defect
+        subfolders (label=1) into flat lists for use with train_test_split.
+
+        Args:
+            category_path: Path to the category directory (e.g. data/mvtec_ad/metal_nut).
+
+        Returns:
+            Tuple of (paths, labels) lists.
+        """
+        paths, labels = [], []
+        for folder in [category_path / 'train' / 'good',
+                       category_path / 'test'  / 'good']:
+            for p in sorted(folder.glob('*.png')):
+                paths.append(str(p)); labels.append(0)
+
+        for subfolder in sorted((category_path / 'test').iterdir()):
+            if subfolder.is_dir() and subfolder.name != 'good':
+                for p in sorted(subfolder.glob('*.png')):
+                    paths.append(str(p)); labels.append(1)
+
+        return paths, labels
+
+
 def normalize_dataset(X: np.ndarray) -> np.ndarray:
     """Normalizza un array di immagini in [0, 1].
 

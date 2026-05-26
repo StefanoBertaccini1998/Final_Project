@@ -45,8 +45,9 @@ feat: MVTec AD dataset loader and exploratory analysis
 feat: preprocessing pipeline (Stage 1)
 
 - src/preprocessing.py: load, resize, normalize, denoise, augment
-- Augmentation strategy: horizontal flip + rotation
-- Normalization to [0,1] range
+- Added preprocess() as single entry point for both HOG and DL pipelines
+- Normalization to [0,1] range; ImageNet mean/std deferred to DataLoader
+- notebooks/02_preprocessing_visualization.ipynb: visual step-by-step walkthrough
 ```
 **Quando**: dopo aver testato il preprocessing su qualche immagine
 
@@ -56,10 +57,10 @@ feat: preprocessing pipeline (Stage 1)
 ```
 feat: classical baseline - HOG features + SVM classifier (Stage 2-3)
 
-- src/features.py: HOG and SIFT extraction
+- src/features.py: HOG feature extraction
 - src/models/classical.py: SVM with StandardScaler
-- Baseline results: accuracy X%, F1 X%
-- notebooks/02_classical_baseline.ipynb
+- Baseline results: accuracy X%, F1 X% on metal_nut
+- notebooks/03_classical_baseline.ipynb: HOG visualization + confusion matrix
 ```
 **Quando**: dopo aver ottenuto le prime metriche del baseline
 
@@ -84,7 +85,7 @@ feat: EfficientNet-B0 fine-tuning with custom head (Stage 2-3 DL)
 - src/models/deep.py: DeepClassifier with backbone + custom head
 - Training loop with GPU support (RTX 5070)
 - Early stopping and model checkpointing
-- notebooks/03_deep_learning.ipynb
+- notebooks/04_deep_learning.ipynb: training curves + feature map visualization
 ```
 **Quando**: dopo il primo training completato con risultati
 
@@ -96,7 +97,7 @@ feat: model comparison and evaluation results
 
 - Classical (HOG+SVM): accuracy X%, F1 X%
 - Deep learning (EfficientNet): accuracy X%, F1 X%
-- Confusion matrices and performance plots
+- notebooks/05_model_comparison.ipynb: side-by-side confusion matrices and plots
 - outputs/results/ with saved figures
 ```
 **Quando**: dopo aver confrontato i due modelli
@@ -109,13 +110,26 @@ feat: ROI zone check for out-of-range detection (Stage 4)
 
 - src/postprocessing.py: NMS and morphological refinement
 - Zone of interest definition and boundary check
-- Visual overlay on detected anomalies
+- notebooks/06_postprocessing.ipynb: visual overlay on detected anomalies
 ```
 **Quando**: dopo aver implementato e testato il zone check
 
 ---
 
-## Commit 9 — Main pipeline integration
+## Commit 9 — Per-category evaluation
+```
+feat: per-category evaluation (all 15 MVTec categories)
+
+- Loop training and evaluation over all 15 MVTec AD categories
+- Follows benchmark protocol: Bergmann et al. (2021)
+- notebooks/07_per_category_evaluation.ipynb: results table + category breakdown
+- outputs/results/per_category_metrics.csv
+```
+**Quando**: dopo aver validato il pipeline su metal_nut
+
+---
+
+## Commit 10 — Main pipeline integration
 ```
 feat: end-to-end pipeline integration
 

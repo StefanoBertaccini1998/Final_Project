@@ -175,9 +175,28 @@ in_features = 1280
 in_features = 1280  # set in_features to 1280
 ```
 
+### Notebooks
+Every pipeline stage has a companion notebook that:
+- Visualizes the output of that stage on real images
+- Prints key statistics (shape, dtype, value range, timing)
+- Documents design choices with inline markdown cells
+- Serves as exam documentation — a professor should be able to follow it top to bottom
+
+Notebook naming convention:
+```
+01_explore_dataset.ipynb        ← Stage 0 (dataset) ✅
+02_preprocessing_visualization.ipynb  ← Stage 1 (preprocessing)
+03_classical_baseline.ipynb     ← Stage 2-3a (HOG + SVM)
+04_deep_learning.ipynb          ← Stage 2-3b (EfficientNet)
+05_model_comparison.ipynb       ← Results comparison
+06_postprocessing.ipynb         ← Stage 4 (ROI zone check)
+07_per_category_evaluation.ipynb ← All 15 MVTec categories
+```
+
 ### Git
 - Commit only working code.
 - Follow the messages in COMMITS.md exactly.
+- Each commit includes its companion notebook when applicable.
 - Never commit: `data/`, `venv/`, `outputs/checkpoints/*.pt`, credentials.
 
 ---

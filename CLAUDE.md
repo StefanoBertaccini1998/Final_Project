@@ -167,11 +167,19 @@ python src/check_setup.py
 - Testato: PASS su buona parte (prob=1.5%), REJECT su difettosa (prob=100%)
 - `--roi-margin 0.05` per immagini MVTec close-up (default 0.20 per camere wide-field)
 
-### ⬜ Next Step — Commit 11
-Documentazione tecnica e README finale:
-- `docs/paper_draft.md`: completare sezione 3 con i numeri reali (mean F1 per-category, confronto HOG vs EfficientNet)
-- `README.md`: setup, architettura, risultati, come usare main.py
-- Revisione docstring e commenti nei moduli src/
+### ✅ Done (Commit 11 — technical analysis and README)
+- `README.md`: riscritto completo — risultati reali, architettura, setup, usage CLI, notebook guide, riferimenti
+- `docs/paper_draft.md`: completato con numeri reali
+  - Sezione 2.5: Stage 4 ROI zone check (design decisions, limitazione MVTec close-up)
+  - Sezione 3: risultati completi (metal_nut HOG vs EfficientNet, threshold sensitivity, per-category table)
+  - Sezione 4: failure analysis (HOG failure modes, EfficientNet bias, ROI limitation, proposed improvements)
+  - Appendix Decision Log: 14 decisioni documentate con alternatives considered
+
+### ⬜ Next Step — Commit 12 (opzionale)
+EfficientNet per-category su categorie dove HOG fallisce:
+- Girare EfficientNet su 6 categorie texture (carpet, leather, wood, tile, grid, cable)
+- Confronto HOG vs EfficientNet per categoria in notebook 09
+- Dimostra che le feature learned generalizzano dove HOG fallisce
 
 ---
 
@@ -189,8 +197,8 @@ Documentazione tecnica e README finale:
 | 8 | `feat: ROI zone check post-processing` | ✅ |
 | 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ✅ |
 | 10 | `feat: end-to-end pipeline integration` | ✅ |
-| 11 | `docs: technical analysis and README` | ⬜ Next |
-| 12 | `feat: error analysis by defect type (optional)` | ⬜ optional |
+| 11 | `docs: technical analysis and README` | ✅ |
+| 12 | `feat: error analysis by defect type (optional)` | ⬜ Next (opt) |
 | 13 | `feat: Gradio demo (optional)` | ⬜ optional |
 
 Full details in `COMMITS.md`.

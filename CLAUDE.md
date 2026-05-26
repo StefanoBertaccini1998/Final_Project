@@ -151,11 +151,19 @@ python src/check_setup.py
 - Nota design: margine 20% progettato per camere wide-field; per MVTec close-up ridurre a 5%
 - Concetto dimostrato e limitazione documentata per il paper
 
-### ⬜ Next Step — Commit 9
-Per-category evaluation su tutte le 15 categorie MVTec:
-- Loop HOG+SVM su tutte le categorie → tabella aggregata
-- `notebooks/08_per_category_evaluation.ipynb`: risultati per categoria + mean F1
+### ✅ Done (Commit 9 — per-category evaluation)
+- `notebooks/08_per_category_evaluation.ipynb`: HOG+SVM su tutte e 15 le categorie MVTec AD
+- **Risultati aggregati**: mean F1=0.263, solo 6/15 categorie funzionano (bottle, toothbrush, metal_nut, pill, capsule, zipper)
+- 9/15 categorie F1=0.000 — textures (carpet, leather, wood, tile, grid) e oggetti complessi (cable, screw, transistor, hazelnut)
+- Analisi: HOG cattura gradienti strutturali, fallisce su difetti di colore/texture sottile — motiva EfficientNet
+- Confronto metal_nut: HOG F1=0.605 vs EfficientNet t=0.3 F1=0.784 incluso nel notebook
 - Segue protocollo benchmark Bergmann et al. (2021)
+
+### ⬜ Next Step — Commit 10
+End-to-end pipeline integration in `src/main.py`:
+- CLI: `python src/main.py --image <path> --category metal_nut --model hog`
+- Orchestrazione: preprocess → extract features → classify → ROI check → verdict
+- Argomenti: `--image`, `--category`, `--model` (hog | efficientnet), `--threshold`
 
 ---
 
@@ -171,8 +179,8 @@ Per-category evaluation su tutte le 15 categorie MVTec:
 | 6 | `feat: EfficientNet fine-tuning` | ✅ |
 | 7 | `feat: model comparison and results` | ✅ |
 | 8 | `feat: ROI zone check post-processing` | ✅ |
-| 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ Next |
-| 10 | `feat: end-to-end pipeline integration` | ⬜ |
+| 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ✅ |
+| 10 | `feat: end-to-end pipeline integration` | ⬜ Next |
 | 11 | `docs: technical analysis and README` | ⬜ |
 | 12 | `feat: error analysis by defect type (optional)` | ⬜ optional |
 | 13 | `feat: Gradio demo (optional)` | ⬜ optional |

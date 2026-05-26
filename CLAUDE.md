@@ -98,12 +98,27 @@ python src/check_setup.py
 - GPU confirmed working (RTX 5070 + CUDA 12.8)
 - MVTec dataset downloaded and verified (15 categories)
 
-### ⬜ Next Step — Commit 2
-Run `notebooks/01_explore_dataset.ipynb` to:
-1. Visualize good vs defective examples for `metal_nut`
-2. Check class distribution (expected: ~200 good, ~80 defective in test)
-3. Confirm the loader works end-to-end
-4. Save 1-2 example figures to `outputs/results/` for the paper
+### ✅ Done (Commit 2 — dataset loader and exploratory analysis)
+- `notebooks/01_explore_dataset.ipynb` executed end-to-end
+- MVTecDataset loader verified on all 15 categories (binary + multi-class)
+- Good vs defective examples visualized for `metal_nut`
+- Class distribution confirmed
+- Example figures saved to `outputs/results/`
+
+### ✅ Done (Commit 3 — preprocessing pipeline)
+- `src/preprocessing.py`: aggiunta `preprocess()` — funzione di alto livello che orchestra load → denoise → normalize
+- Pipeline testata end-to-end su immagine reale MVTec (`metal_nut/train/good/000.png`)
+- Output verificato: shape `(224, 224, 3)`, dtype `float32`, range `[0.06, 0.92]`
+- Smoke test integrato nel modulo (`if __name__ == "__main__"`)
+- `.gitignore` aggiornato: escluso `.claude/`
+- `CLAUDE.md`: aggiunte decisioni di design (per-category evaluation, Bergmann et al.)
+
+### ⬜ Next Step — Commit 4
+Implementare e validare il baseline classico:
+- `src/features.py`: estrarre features HOG da tutto il dataset `metal_nut`
+- `src/models/classical.py`: trainare SVM con StandardScaler
+- `notebooks/02_classical_baseline.ipynb`: run completo con metriche accuracy e F1
+- Risultati da loggare in `outputs/results/`
 
 ---
 
@@ -111,17 +126,19 @@ Run `notebooks/01_explore_dataset.ipynb` to:
 
 | # | Message | Status |
 |---|---|---|
-| 1 | `feat: initial project setup` | ⬜ Ready to commit |
-| 2 | `feat: dataset loader and exploratory analysis` | ⬜ Next |
-| 3 | `feat: preprocessing pipeline` | ⬜ |
-| 4 | `feat: classical baseline HOG + SVM` | ⬜ |
+| 1 | `feat: initial project setup` | ✅ |
+| 2 | `feat: dataset loader and exploratory analysis` | ✅ |
+| 3 | `feat: preprocessing pipeline` | ✅ |
+| 4 | `feat: classical baseline HOG + SVM` | ⬜ Next |
 | 5 | `feat: evaluation module` | ⬜ |
 | 6 | `feat: EfficientNet fine-tuning` | ⬜ |
 | 7 | `feat: model comparison and results` | ⬜ |
 | 8 | `feat: ROI zone check post-processing` | ⬜ |
-| 9 | `feat: end-to-end pipeline integration` | ⬜ |
-| 10 | `docs: technical analysis and README` | ⬜ |
-| 11 | `feat: Gradio demo (optional)` | ⬜ optional |
+| 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ |
+| 10 | `feat: end-to-end pipeline integration` | ⬜ |
+| 11 | `docs: technical analysis and README` | ⬜ |
+| 12 | `feat: error analysis by defect type (optional)` | ⬜ optional |
+| 13 | `feat: Gradio demo (optional)` | ⬜ optional |
 
 Full details in `COMMITS.md`.
 
@@ -176,6 +193,8 @@ in_features = 1280  # set in_features to 1280
 | Dataset category | metal_nut | Most representative of cutting machine components |
 | Augmentation | Horizontal flip only | Nuts are left-right symmetric; vertical flip disabled (parts have orientation) |
 | Baseline | HOG + SVM | Required by exam; provides meaningful lower bound for DL comparison |
+| Evaluation protocol | Per-category (15 models) | Follows MVTec AD benchmark standard (Bergmann et al., 2021) — avoids feature interference between heterogeneous categories |
+| Secondary objective | Error analysis by defect type | If time permits — which defect types does SVM vs EfficientNet struggle with and why |
 
 ---
 

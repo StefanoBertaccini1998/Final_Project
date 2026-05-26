@@ -131,6 +131,36 @@ def denoise(image: np.ndarray, method: str = "gaussian", ksize: int = 3) -> np.n
 # Augmentation
 # ---------------------------------------------------------------------------
 
+def preprocess(
+    path: str,
+    target_size: tuple = DEFAULT_SIZE,
+    apply_denoise: bool = True,
+) -> np.ndarray:
+    """Full preprocessing pipeline: load → denoise → normalize.
+
+    This is the single entry point used by both the classical (HOG+SVM)
+    and deep learning (EfficientNet) pipelines. Keeping the chain here
+    ensures both pipelines receive identical inputs and simplifies
+    maintenance — any preprocessing change is made in one place only.
+
+    Note: ImageNet mean/std normalization is NOT applied here. It is
+    handled inside the PyTorch DataLoader transform so that this function
+    remains usable for the classical pipeline without torchvision.
+
+    Args:
+        path: Path to the input image file.
+        target_size: (width, height) in pixels. Defaults to 224x224.
+        apply_denoise: If True, apply Gaussian denoising before normalize.
+
+    Returns:
+        float32 numpy array of shape (H, W, 3), values in [0.0, 1.0], RGB.
+    """
+    img = load_image(path, target_size)
+    if apply_denoise:
+        img = denoise(img)
+    return normalize(img)
+
+
 def augment(
     image: np.ndarray,
     flip_h: bool = True,
@@ -174,3 +204,28 @@ def augment(
         augmented.append(cv2.flip(image, 0))
 
     return augmented
+
+
+# ---------------------------------------------------------------------------
+# Smoke test — run directly to verify pipeline on a real image
+# Usage: python src/preprocessing.py <path_to_image>
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+        print("Usage: python src/preprocessing.py <path_to_image>")
+        sys.exit(1)
+
+    img_path = sys.argv[1]
+    print(f"Testing preprocessing pipeline on: {img_path}")
+
+    result = preprocess(img_path)
+    print(f"  Output shape : {result.shape}")
+    print(f"  dtype        : {result.dtype}")
+    print(f"  value range  : [{result.min():.4f}, {result.max():.4f}]")
+
+    augmented = augment(result)
+    print(f"  Augmented copies: {len(augmented)} (original + flips)")
+    print("Pipeline OK.")

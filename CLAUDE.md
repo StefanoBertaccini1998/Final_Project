@@ -135,11 +135,20 @@ python src/check_setup.py
 - Analisi: precision perfetta (zero falsi allarmi) ma recall identica a SVM — causa: class imbalance + CrossEntropyLoss non pesata
 - Proposta miglioramento documentata: class-weighted loss o threshold tuning
 
-### ⬜ Next Step — Commit 7
-Confronto modelli e risultati finali:
-- `notebooks/06_model_comparison.ipynb`: tabella comparativa HOG+SVM vs EfficientNet, confusion matrices affiancate, analisi gap
-- Aggiornare `docs/paper_draft.md` sezione 3 (Experimental Results) con i numeri reali
-- Proposta class-weighted loss per migliorare recall difetti
+### ✅ Done (Commit 7 — model comparison and results)
+- `notebooks/06_model_comparison.ipynb`: tabella comparativa, confusion matrices affiancate, curva Precision-Recall, threshold tuning
+- **Risultati finali metal_nut**:
+  - HOG+SVM: Accuracy 83.2% | F1 0.605 | Recall 46.4% | Precision 86.7%
+  - EfficientNet (t=0.5): Accuracy 88.1% | F1 0.727 | Recall 57.1% | Precision 100%
+  - EfficientNet (t=0.3): Accuracy 89.1% | F1 **0.784** | Recall **71.4%** | Precision 87.0%
+- Curva PR dimostra EfficientNet superiore a qualsiasi soglia
+- Sweet spot identificato: t=0.3 (recall +14%, precision 87%)
+
+### ⬜ Next Step — Commit 8
+Implementare ROI zone check (post-processing):
+- `src/postprocessing.py`: definizione ROI, boundary check, overlay visivo
+- `notebooks/07_postprocessing.ipynb`: visualizzazione zone check su immagini reali
+- Integrazione con output del classificatore
 
 ---
 
@@ -153,8 +162,8 @@ Confronto modelli e risultati finali:
 | 4 | `feat: classical baseline HOG + SVM` | ✅ |
 | 5 | `feat: evaluation module` | ✅ |
 | 6 | `feat: EfficientNet fine-tuning` | ✅ |
-| 7 | `feat: model comparison and results` | ⬜ Next |
-| 8 | `feat: ROI zone check post-processing` | ⬜ |
+| 7 | `feat: model comparison and results` | ✅ |
+| 8 | `feat: ROI zone check post-processing` | ⬜ Next |
 | 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ |
 | 10 | `feat: end-to-end pipeline integration` | ⬜ |
 | 11 | `docs: technical analysis and README` | ⬜ |

@@ -120,11 +120,19 @@ python src/check_setup.py
 - **Risultati metal_nut**: Accuracy 83.2% | F1 0.605 | Recall difetti 46% (15/28 mancati)
 - Interpretazione: SVM+HOG cattura la forma globale ma manca i difetti locali sottili — giustifica EfficientNet
 
-### ⬜ Next Step — Commit 5
-Implementare il modulo di valutazione:
-- `src/evaluate.py`: accuracy, precision, recall, F1, confusion matrix con output formattato
-- Funzioni riusabili da entrambi i pipeline (HOG+SVM e EfficientNet)
-- Metriche di segmentazione (IoU, Dice) per uso futuro
+### ✅ Done (Commit 5 — evaluation module)
+- `src/evaluate.py`: `evaluate_classification()`, `print_results()`, `results_row()`, `compute_iou()`, `compute_dice()`
+- Metriche binarie separate da weighted — recall difetti come metrica safety-critical primaria
+- `results_row()` produce formato tabella per confronto finale HOG+SVM vs EfficientNet
+- `notebooks/04_evaluation_module.ipynb`: demo su risultati HOG+SVM, spiegazione scelte metriche
+- Smoke test verificato: output corretto su input sintetici
+
+### ⬜ Next Step — Commit 6
+Implementare EfficientNet-B0 fine-tuning:
+- `src/models/deep.py`: DeepClassifier con backbone EfficientNet-B0 + custom head
+- Training loop con GPU (RTX 5070): Phase 1 (head only) → Phase 2 (full network)
+- Early stopping e checkpointing in `outputs/checkpoints/`
+- `notebooks/04_deep_learning.ipynb`: training curves (loss/accuracy per epoch) + risultati
 
 ---
 
@@ -136,8 +144,8 @@ Implementare il modulo di valutazione:
 | 2 | `feat: dataset loader and exploratory analysis` | ✅ |
 | 3 | `feat: preprocessing pipeline` | ✅ |
 | 4 | `feat: classical baseline HOG + SVM` | ✅ |
-| 5 | `feat: evaluation module` | ⬜ Next |
-| 6 | `feat: EfficientNet fine-tuning` | ⬜ |
+| 5 | `feat: evaluation module` | ✅ |
+| 6 | `feat: EfficientNet fine-tuning` | ⬜ Next |
 | 7 | `feat: model comparison and results` | ⬜ |
 | 8 | `feat: ROI zone check post-processing` | ⬜ |
 | 9 | `feat: per-category evaluation (all 15 MVTec categories)` | ⬜ |

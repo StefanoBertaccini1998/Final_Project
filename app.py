@@ -83,10 +83,7 @@ def _load_enet(category: str) -> DeepClassifier | None:
     return model
 
 
-# Pre-load all available models at startup
-for _cat in CATEGORIES:
-    _load_hog(_cat)
-    _load_enet(_cat)
+# Models are loaded on first use (lazy) to keep startup fast on Railway.
 
 
 # ---------------------------------------------------------------------------

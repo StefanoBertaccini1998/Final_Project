@@ -43,8 +43,9 @@ CATEGORIES = ["metal_nut", "carpet", "leather", "wood", "tile", "grid", "cable"]
 # HOG+SVM checkpoint available only for metal_nut
 HOG_CATEGORIES = ["metal_nut"]
 
-# EfficientNet threshold sweet spot from notebook 06
-ENET_THRESHOLD = 0.3
+# V2 model (weighted loss) performs best at t=0.5: F1=0.792, Precision=0.950.
+# Threshold tuning was a workaround for V1's class-imbalance bias; V2 no longer needs it.
+ENET_THRESHOLD = 0.5
 LOW_CONF_LOW  = 0.35
 LOW_CONF_HIGH = 0.65
 
@@ -259,7 +260,7 @@ with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) 
                     roi_out          = gr.Image(label="ROI zone check", height=200)
 
                 with gr.Column():
-                    gr.Markdown("### EfficientNet-B0")
+                    gr.Markdown("### EfficientNet-B0 (V2 — weighted loss)")
                     enet_verdict_out = gr.Label(label="Verdict")
                     enet_prob_out    = gr.Textbox(label="Defect probability", interactive=False)
                     gradcam_out      = gr.Image(label="Grad-CAM heatmap", height=200)

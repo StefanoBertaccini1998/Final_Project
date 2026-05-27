@@ -125,11 +125,27 @@ def _load_enet(category: str) -> DeepClassifier | None:
 # ---------------------------------------------------------------------------
 # Inference helpers
 # ---------------------------------------------------------------------------
+_BANNER_BASE = (
+    "border-radius:6px;padding:10px 14px;margin-bottom:8px;"
+    "font-size:14px;font-weight:500;"
+)
+
 def _error_html(msg: str) -> str:
     return (
-        f"<div style='background:#f8d7da;border:1px solid #f5c2c7;border-radius:6px;"
-        f"padding:10px;margin-top:8px;font-size:14px'>"
+        f"<div style='{_BANNER_BASE}background:#f8d7da;border:1px solid #f5c2c7;color:#842029'>"
         f"❌ <b>Error</b>: {msg}</div>"
+    )
+
+def _warn_html(msg: str) -> str:
+    return (
+        f"<div style='{_BANNER_BASE}background:#fff3cd;border:1px solid #ffc107;color:#664d03'>"
+        f"⚠️ {msg}</div>"
+    )
+
+def _info_html(msg: str) -> str:
+    return (
+        f"<div style='{_BANNER_BASE}background:#cff4fc;border:1px solid #9eeaf9;color:#055160'>"
+        f"ℹ️ {msg}</div>"
     )
 
 
@@ -292,11 +308,9 @@ def classify(image: np.ndarray | None, category: str, gallery_path: str | None =
             enet_prob_str = f"{enet_prob:.1%}  (threshold {ENET_THRESHOLD:.0%})"
             warning_html = ""
             if LOW_CONF_LOW <= enet_prob <= LOW_CONF_HIGH:
-                warning_html = (
-                    "<div style='background:#fff3cd;border:1px solid #ffc107;"
-                    "border-radius:6px;padding:10px;margin-top:8px;font-size:14px'>"
-                    "⚠️ <b>Low confidence</b> — result may be unreliable on "
-                    "out-of-distribution images.</div>"
+                warning_html = _warn_html(
+                    f"<b>Low confidence</b> ({enet_prob:.0%}) — result may be unreliable "
+                    "on out-of-distribution images."
                 )
 
         # Grad-CAM placeholder: show preprocessed image until user requests heatmap
@@ -336,13 +350,67 @@ def run_gradcam(image_float: np.ndarray | None, category: str) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Gradio UI
 # ---------------------------------------------------------------------------
-with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) as demo:
+with gr.Blocks(
+    title="Smart Factory Vision Monitor",
+    theme=gr.themes.Soft(),
+    css="""
+        .model-header {
+            font-size: 15px; font-weight: 700; padding: 6px 0 10px 0;
+            border-bottom: 2px solid #e2e8f0; margin-bottom: 10px;
+        }
+        footer { display:none !important; }
+    """,
+) as demo:
 
-    gr.Markdown(
-        "# Smart Factory Vision Monitor\n"
-        "**Comparative defect detection**: HOG+SVM classical baseline vs "
-        "EfficientNet-B0 deep learning. Select a category, pick an example "
-        "or upload your own image."
+    # ── Header ──────────────────────────────────────────────────────────────
+    gr.HTML(
+        "<div style='background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);"
+        "border-radius:10px;padding:20px 24px;margin-bottom:12px;'>"
+        "<h1 style='color:#f1f5f9;margin:0 0 4px 0;font-size:22px;font-weight:700;"
+        "letter-spacing:-0.3px;'>Smart Factory Vision Monitor</h1>"
+        "<p style='color:#94a3b8;margin:0;font-size:13px;'>"
+        "Comparative defect detection &middot; HOG+SVM baseline vs EfficientNet-B0 V2 &middot; "
+        "MVTec Anomaly Detection dataset &middot; EPICODE Computer Vision Project"
+        "</p></div>"
+    )
+
+    # ── Model stats cards ───────────────────────────────────────────────────
+    gr.HTML(
+        "<div style='display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;'>"
+
+        "<div style='flex:1;min-width:170px;background:#f8fafc;border-radius:8px;"
+        "padding:12px 16px;border-left:4px solid #64748b;'>"
+        "<div style='font-size:11px;color:#64748b;font-weight:700;"
+        "text-transform:uppercase;letter-spacing:.06em;'>HOG + SVM</div>"
+        "<div style='font-size:22px;font-weight:800;color:#1e293b;margin:3px 0;'>F1 0.605</div>"
+        "<div style='font-size:12px;color:#64748b;'>Acc 83.2% &middot; Recall 46% &middot; Prec 87%</div>"
+        "</div>"
+
+        "<div style='flex:1;min-width:170px;background:#f0fdf4;border-radius:8px;"
+        "padding:12px 16px;border-left:4px solid #22c55e;'>"
+        "<div style='font-size:11px;color:#15803d;font-weight:700;"
+        "text-transform:uppercase;letter-spacing:.06em;'>EfficientNet-B0 V2</div>"
+        "<div style='font-size:22px;font-weight:800;color:#14532d;margin:3px 0;'>F1 0.792</div>"
+        "<div style='font-size:12px;color:#15803d;'>Acc 88.1% &middot; Recall 68% &middot; Prec 95%</div>"
+        "</div>"
+
+        "<div style='flex:1;min-width:170px;background:#eff6ff;border-radius:8px;"
+        "padding:12px 16px;border-left:4px solid #3b82f6;'>"
+        "<div style='font-size:11px;color:#1d4ed8;font-weight:700;"
+        "text-transform:uppercase;letter-spacing:.06em;'>Dataset</div>"
+        "<div style='font-size:22px;font-weight:800;color:#1e3a8a;margin:3px 0;'>7 categories</div>"
+        "<div style='font-size:12px;color:#1d4ed8;'>MVTec AD &middot; metal_nut primary target</div>"
+        "</div>"
+
+        "<div style='flex:1;min-width:170px;background:#fdf4ff;border-radius:8px;"
+        "padding:12px 16px;border-left:4px solid #a855f7;'>"
+        "<div style='font-size:11px;color:#7e22ce;font-weight:700;"
+        "text-transform:uppercase;letter-spacing:.06em;'>Improvement V1&rarr;V2</div>"
+        "<div style='font-size:22px;font-weight:800;color:#581c87;margin:3px 0;'>+22% F1</div>"
+        "<div style='font-size:12px;color:#7e22ce;'>Weighted loss &middot; FN: 15&rarr;9</div>"
+        "</div>"
+
+        "</div>"
     )
 
     # Hidden state: preprocessed float image for deferred GradCAM
@@ -354,6 +422,11 @@ with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) 
     with gr.Row():
         # ── Left column: input controls ────────────────────────────────────
         with gr.Column(scale=1):
+            gr.HTML(
+                "<div style='font-size:11px;font-weight:700;color:#64748b;"
+                "text-transform:uppercase;letter-spacing:.06em;"
+                "margin-bottom:6px;'>Input</div>"
+            )
             category_dd = gr.Dropdown(
                 choices=CATEGORIES,
                 value="metal_nut",
@@ -361,36 +434,115 @@ with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) 
             )
             gallery = gr.Gallery(
                 value=get_gallery_images("metal_nut"),
-                label="Examples (click to load)",
+                label="Example images — click to load",
                 columns=4,
-                height=220,
+                height=210,
                 object_fit="cover",
                 allow_preview=False,
             )
             image_input = gr.Image(
                 type="numpy",
-                label="Input image",
-                height=260,
+                label="Selected / uploaded image",
+                height=250,
             )
-            run_btn = gr.Button("Classify", variant="primary")
+            run_btn = gr.Button("Classify", variant="primary", size="lg")
+            gr.HTML(
+                "<div style='font-size:11px;color:#94a3b8;margin-top:6px;line-height:1.6;'>"
+                "HOG+SVM available for <b>metal_nut</b> only.<br>"
+                "Other categories: EfficientNet-B0 only."
+                "</div>"
+            )
 
         # ── Right column: results ───────────────────────────────────────────
         with gr.Column(scale=2):
-            warning_out = gr.HTML(label="")
+            warning_out = gr.HTML()
 
             with gr.Row():
+                # ── HOG + SVM ──────────────────────────────────────────────
                 with gr.Column():
-                    gr.Markdown("### HOG + SVM")
+                    gr.HTML(
+                        "<div class='model-header' style='color:#374151;'>"
+                        "HOG + SVM"
+                        "<span style='font-size:11px;font-weight:400;color:#9ca3af;"
+                        "margin-left:8px;'>classical baseline</span></div>"
+                    )
                     hog_verdict_out  = gr.Label(label="Verdict")
-                    hog_prob_out     = gr.Textbox(label="Defect probability", interactive=False)
-                    roi_out          = gr.Image(label="ROI zone check", height=200)
+                    hog_prob_out     = gr.Textbox(
+                        label="Defect probability", interactive=False
+                    )
+                    roi_out          = gr.Image(
+                        label="ROI zone check", height=210
+                    )
 
+                # ── EfficientNet-B0 ────────────────────────────────────────
                 with gr.Column():
-                    gr.Markdown("### EfficientNet-B0 (V2 — weighted loss)")
+                    gr.HTML(
+                        "<div class='model-header' style='color:#15803d;'>"
+                        "EfficientNet-B0 V2"
+                        "<span style='font-size:11px;font-weight:400;color:#9ca3af;"
+                        "margin-left:8px;'>weighted loss &middot; threshold 0.5</span></div>"
+                    )
                     enet_verdict_out = gr.Label(label="Verdict")
-                    enet_prob_out    = gr.Textbox(label="Defect probability", interactive=False)
-                    gradcam_out      = gr.Image(label="Grad-CAM heatmap", height=200)
-                    gradcam_btn      = gr.Button("Generate Grad-CAM  (slow ~30s on CPU)")
+                    enet_prob_out    = gr.Textbox(
+                        label="Defect probability", interactive=False
+                    )
+                    gradcam_out      = gr.Image(
+                        label="Grad-CAM heatmap", height=210
+                    )
+                    gradcam_btn      = gr.Button(
+                        "Generate Grad-CAM  (slow on CPU — ~30 s)",
+                        variant="secondary",
+                    )
+
+    # ── Footer metrics table ────────────────────────────────────────────────
+    gr.HTML(
+        "<div style='margin-top:18px;padding:14px 18px;background:#f8fafc;"
+        "border-radius:8px;border:1px solid #e2e8f0;'>"
+        "<div style='font-size:11px;font-weight:700;color:#64748b;"
+        "text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;'>"
+        "metal_nut benchmark &mdash; full results"
+        "</div>"
+        "<table style='width:100%;border-collapse:collapse;font-size:12px;color:#1e293b;'>"
+        "<thead><tr style='border-bottom:1px solid #cbd5e1;'>"
+        "<th style='text-align:left;padding:4px 8px;color:#64748b;'>Model</th>"
+        "<th style='padding:4px 8px;color:#64748b;'>Accuracy</th>"
+        "<th style='padding:4px 8px;color:#64748b;'>F1</th>"
+        "<th style='padding:4px 8px;color:#64748b;'>Recall</th>"
+        "<th style='padding:4px 8px;color:#64748b;'>Precision</th>"
+        "<th style='padding:4px 8px;color:#64748b;'>FN / 28</th>"
+        "</tr></thead>"
+        "<tbody>"
+        "<tr style='border-bottom:1px solid #f1f5f9;'>"
+        "<td style='padding:5px 8px;font-weight:600;'>HOG + SVM</td>"
+        "<td style='text-align:center;padding:5px 8px;'>83.2%</td>"
+        "<td style='text-align:center;padding:5px 8px;'>0.605</td>"
+        "<td style='text-align:center;padding:5px 8px;'>46.4%</td>"
+        "<td style='text-align:center;padding:5px 8px;'>86.7%</td>"
+        "<td style='text-align:center;padding:5px 8px;'>15</td>"
+        "</tr>"
+        "<tr style='border-bottom:1px solid #f1f5f9;'>"
+        "<td style='padding:5px 8px;font-weight:600;'>EfficientNet V1 (t=0.5)</td>"
+        "<td style='text-align:center;padding:5px 8px;'>85.1%</td>"
+        "<td style='text-align:center;padding:5px 8px;'>0.634</td>"
+        "<td style='text-align:center;padding:5px 8px;'>46.4%</td>"
+        "<td style='text-align:center;padding:5px 8px;'>100%</td>"
+        "<td style='text-align:center;padding:5px 8px;'>15</td>"
+        "</tr>"
+        "<tr style='background:#f0fdf4;font-weight:700;'>"
+        "<td style='padding:5px 8px;color:#15803d;'>EfficientNet V2 (t=0.5) &#9733;</td>"
+        "<td style='text-align:center;padding:5px 8px;color:#15803d;'>88.1%</td>"
+        "<td style='text-align:center;padding:5px 8px;color:#15803d;'>0.792</td>"
+        "<td style='text-align:center;padding:5px 8px;color:#15803d;'>67.9%</td>"
+        "<td style='text-align:center;padding:5px 8px;color:#15803d;'>95.0%</td>"
+        "<td style='text-align:center;padding:5px 8px;color:#15803d;'>9</td>"
+        "</tr>"
+        "</tbody></table>"
+        "<div style='font-size:11px;color:#94a3b8;margin-top:6px;'>"
+        "V2 fix: CrossEntropyLoss(weight=[1.0, 2.60]) + Phase 2 extended to 20 epochs. "
+        "Grad-CAM pointing accuracy 4.3% &mdash; model attends to global shape, not local defect region."
+        "</div>"
+        "</div>"
+    )
 
     # ── Events ─────────────────────────────────────────────────────────────
     def update_gallery(category: str):
@@ -431,13 +583,6 @@ with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) 
         fn=run_gradcam,
         inputs=[image_float_state, category_dd],
         outputs=[gradcam_out],
-    )
-
-    gr.Markdown(
-        "---\n"
-        "*Metal nut: HOG+SVM available. Other categories: EfficientNet only.*  \n"
-        "*EfficientNet threshold: 0.5 (V2 weighted loss). "
-        "HOG threshold: 0.5 (default).*"
     )
 
 

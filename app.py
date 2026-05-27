@@ -44,7 +44,7 @@ log.info("cv2         : %s", cv2.__version__)
 from src.preprocessing import preprocess
 from src.models.classical import ClassicalClassifier
 from src.models.deep import DeepClassifier, get_transforms
-from src.postprocessing import define_roi, check_roi, draw_overlay
+from src.postprocessing import define_roi, find_part_bbox, check_roi, draw_overlay
 
 try:
     from pytorch_grad_cam import GradCAM
@@ -179,12 +179,15 @@ def _enet_gradcam(image_float: np.ndarray, category: str) -> np.ndarray | None:
 def _roi_overlay(image_float: np.ndarray) -> np.ndarray:
     """Return ROI zone-check overlay image."""
     try:
-        roi = define_roi(image_float, margin=0.05)
-        status, overlap = check_roi(image_float, roi)
-        img_bgr = cv2.cvtColor((image_float * 255).astype(np.uint8), cv2.COLOR_RGB2BGR)
-        overlay_bgr = draw_overlay(img_bgr, roi, status, overlap)
-        return cv2.cvtColor(overlay_bgr, cv2.COLOR_BGR2RGB)
-    except Exception:
+        roi = define_roi(image_float.shape, margin_pct=0.05)
+        part_bbox = find_part_bbox(image_float)
+        in_roi, overlap = check_roi(part_bbox, roi) if part_bbox else (True, 1.0)
+        img_rgb = (image_float * 255).astype(np.uint8)
+        result = draw_overlay(img_rgb, roi, part_bbox, in_roi, is_defective=False)
+        log.info("ROI: part_bbox=%s in_roi=%s overlap=%.2f", part_bbox, in_roi, overlap)
+        return result
+    except Exception as e:
+        log.warning("ROI overlay failed: %s", e)
         return (image_float * 255).astype(np.uint8)
 
 

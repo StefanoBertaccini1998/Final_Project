@@ -182,6 +182,9 @@ python src/check_setup.py
 - Tabella comparativa HOG vs EfficientNet + threshold tuning a t=0.3
 - Runtime ~30 min (da eseguire localmente)
 - Analisi: HOG fallisce su color/texture anomaly, EfficientNet generalizza grazie a feature apprese
+- **Risultati reali**: leather 0.839, wood 0.824, carpet 0.821, cable 0.667, tile 0.649, grid 0.111 (mean F1=0.652)
+- Checkpoint salvati in `outputs/checkpoints/efficientnet_{category}.pt` (ora inclusi nel repo)
+- `.gitignore` aggiornato: checkpoint .pt e .pkl ora committati per demo standalone
 
 ### ⬜ Next Step — Commit 13 (opzionale)
 Demo interattiva Gradio:

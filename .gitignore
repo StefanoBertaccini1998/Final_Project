@@ -29,14 +29,6 @@ build/
 .eggs/
 
 # ======================
-# MODELLI SALVATI (pesanti — opzionale)
-# ======================
-outputs/checkpoints/*.pt
-outputs/checkpoints/*.pth
-outputs/checkpoints/*.pkl
-# Rimuovi le righe sopra se vuoi committare i modelli
-
-# ======================
 # JUPYTER
 # ======================
 .ipynb_checkpoints/

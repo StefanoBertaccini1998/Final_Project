@@ -7,6 +7,7 @@ Grad-CAM is generated on demand (separate button) to keep inference fast.
 
 import os
 import sys
+import logging
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -18,6 +19,27 @@ import torch
 import cv2
 from pathlib import Path
 from PIL import Image
+
+# ---------------------------------------------------------------------------
+# Logging — outputs to stdout so Railway captures it in the dashboard
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    stream=sys.stdout,
+)
+log = logging.getLogger(__name__)
+
+# Log environment at startup
+import sklearn, skimage, joblib as _joblib
+log.info("=== Smart Factory Vision Monitor starting ===")
+log.info("Python      : %s", sys.version.split()[0])
+log.info("sklearn     : %s", sklearn.__version__)
+log.info("skimage     : %s", skimage.__version__)
+log.info("numpy       : %s", np.__version__)
+log.info("joblib      : %s", _joblib.__version__)
+log.info("torch       : %s", torch.__version__)
+log.info("cv2         : %s", cv2.__version__)
 
 from src.preprocessing import preprocess
 from src.models.classical import ClassicalClassifier
@@ -65,10 +87,13 @@ def _load_hog(category: str) -> ClassicalClassifier | None:
         return _hog_models[category]
     ckpt = CKPT_DIR / f"svm_{category}.pkl"
     if not ckpt.exists():
+        log.warning("HOG checkpoint not found: %s", ckpt)
         return None
     clf = ClassicalClassifier()
     clf.load(str(ckpt))
     _hog_models[category] = clf
+    log.info("HOG model loaded: %s | classes=%s | n_support=%s",
+             ckpt.name, clf.model.classes_.tolist(), clf.model.n_support_.tolist())
     return clf
 
 
@@ -77,12 +102,15 @@ def _load_enet(category: str) -> DeepClassifier | None:
         return _enet_models[category]
     ckpt = CKPT_DIR / f"efficientnet_{category}.pt"
     if not ckpt.exists():
+        log.warning("EfficientNet checkpoint not found: %s", ckpt)
         return None
     model = DeepClassifier(num_classes=2)
     model.load_state_dict(torch.load(ckpt, map_location=DEVICE))
     model.unfreeze_backbone()   # required for GradCAM backward hooks
     model.eval()
     _enet_models[category] = model
+    log.info("EfficientNet loaded: %s | device=%s | gradcam_available=%s",
+             ckpt.name, DEVICE, GRADCAM_AVAILABLE)
     # Build GradCAM once and reuse — creating it per-call adds ~70s on CPU
     if GRADCAM_AVAILABLE:
         from pytorch_grad_cam import GradCAM as _GradCAM
@@ -104,8 +132,12 @@ def _hog_classify(image_float: np.ndarray, category: str) -> tuple[str, float] |
         return None
     from src.features import extract_hog
     feat = extract_hog(image_float).reshape(1, -1)
-    prob = float(clf.predict_proba(feat)[0, 1])
+    full_proba = clf.predict_proba(feat)
+    prob = float(full_proba[0, 1])
     verdict = "REJECT" if prob >= 0.5 else "PASS"
+    log.info("HOG [%s] feat_mean=%.4f feat_std=%.4f proba=%s classes=%s -> %s",
+             category, float(feat.mean()), float(feat.std()),
+             full_proba[0].round(3).tolist(), clf.model.classes_.tolist(), verdict)
     return verdict, prob
 
 

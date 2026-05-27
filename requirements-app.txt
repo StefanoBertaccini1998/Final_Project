@@ -5,13 +5,15 @@
 #       --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Core CV / ML
+# Pinned to match training environment — SVM predict_proba and HOG features
+# are sensitive to sklearn/skimage version changes (Platt scaling, normalization).
 opencv-python-headless>=4.8.0
 numpy>=1.24.0
-scikit-learn>=1.3.0
-scikit-image>=0.21.0
+scikit-learn==1.8.0
+scikit-image==0.26.0
 matplotlib>=3.7.0
 Pillow>=10.0.0
-joblib>=1.3.0
+joblib==1.5.3
 
 # PyTorch CPU
 torch>=2.6.0

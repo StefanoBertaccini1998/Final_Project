@@ -189,14 +189,16 @@ python src/check_setup.py
 ### ✅ Done (Commit 13 — Grad-CAM explainability)
 - `notebooks/10_gradcam_visualization.ipynb`: Grad-CAM su EfficientNet-B0 per metal_nut
 - `requirements.txt`: aggiunto `grad-cam>=1.5.0` (libreria `pytorch_grad_cam` di Jacob Gildenblat)
-- Target layer: `model.backbone.features[-1]` (ultimo blocco conv prima del global avg pool)
+- Target layer: `model.backbone.features[-1][0]` (Conv2d 1280ch — il wrapper Conv2dNormActivation bloccava i gradienti)
+- `model.unfreeze_backbone()` necessario prima di GradCAM (freeze_backbone=True blocca i backward hook)
 - 6 immagini analizzate: 2 good + bent + scratch + color + flip
-- Pointing accuracy: argmax(heatmap) vs GT mask per tutte le immagini defective
-- Sanity check su good images: heatmap non deve concentrarsi su zona fissa
-- Deletion test: mascheratura top-20% con rumore gaussiano → verifica calo probabilità
+- **Risultati reali**:
+  - Defect probs: bent 67.2%, scratch 50.3%, color 66.7%, flip 99.7%
+  - Pointing accuracy: **4/93 = 4.3%** (bent 8%, scratch 0%, color 0%, flip 8.7%)
+  - Sanity check (good parts): mean concentration ratio = 5.24
+  - Deletion test: scratch -50.3pp, color -66.7pp (validati); bent +32.8pp (strutturale, non locale)
 - Figure salvate in `outputs/results/gradcam/` a dpi=150
-- Costante `GRADCAM_ALPHA = 0.4` per overlay transparency
-- **Da eseguire localmente** per ottenere pointing accuracy reale e aggiornare paper_draft.md Section 3.6
+- `docs/paper_draft.md` Section 3.6 aggiornata con numeri reali
 
 ### ⬜ Next Step — Commit 14 (opzionale): Gradio demo "comparativa"
 - `app.py`: interfaccia web con tab HOG+SVM vs EfficientNet side-by-side

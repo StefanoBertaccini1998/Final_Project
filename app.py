@@ -56,6 +56,7 @@ GRADCAM_ALPHA = 0.4
 # ---------------------------------------------------------------------------
 _hog_models: dict[str, ClassicalClassifier] = {}
 _enet_models: dict[str, DeepClassifier] = {}
+_gradcam_objects: dict[str, "GradCAM"] = {}  # one GradCAM per category, reused across calls
 
 
 def _load_hog(category: str) -> ClassicalClassifier | None:
@@ -81,6 +82,11 @@ def _load_enet(category: str) -> DeepClassifier | None:
     model.unfreeze_backbone()   # required for GradCAM backward hooks
     model.eval()
     _enet_models[category] = model
+    # Build GradCAM once and reuse — creating it per-call adds ~70s on CPU
+    if GRADCAM_AVAILABLE:
+        from pytorch_grad_cam import GradCAM as _GradCAM
+        target_layers = [model.backbone.features[-1][0]]
+        _gradcam_objects[category] = _GradCAM(model=model, target_layers=target_layers)
     return model
 
 
@@ -111,11 +117,10 @@ def _enet_classify(image_float: np.ndarray, category: str) -> tuple[str, float, 
     img_u8 = (image_float * 255).astype(np.uint8)
     tensor = get_transforms(train=False)(img_u8).unsqueeze(0).to(DEVICE)
 
-    # Grad-CAM
+    # Grad-CAM — reuse cached object (creating it per-call adds ~70s on CPU)
     overlay = None
-    if GRADCAM_AVAILABLE:
-        target_layers = [model.backbone.features[-1][0]]
-        cam = GradCAM(model=model, target_layers=target_layers)
+    if GRADCAM_AVAILABLE and category in _gradcam_objects:
+        cam = _gradcam_objects[category]
         with torch.enable_grad():
             heatmap = cam(input_tensor=tensor, targets=[ClassifierOutputTarget(1)])[0]
         overlay = show_cam_on_image(image_float.astype(np.float32), heatmap, use_rgb=True, image_weight=1 - GRADCAM_ALPHA)

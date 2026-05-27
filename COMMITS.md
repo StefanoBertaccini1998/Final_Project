@@ -153,15 +153,50 @@ docs: technical analysis document and final README
 
 ---
 
-## Commit 11 — (Opzionale) Gradio demo
+## Commit 13 — Grad-CAM explainability ⬜ NEXT
+```
+feat: Grad-CAM explainability for EfficientNet-B0
+
+- notebooks/10_gradcam_visualization.ipynb
+- Heatmap visualization on good and defective samples
+- Ground truth mask overlay from MVTec GT annotations
+- Pointing accuracy metric: argmax(heatmap) inside GT mask
+- Sanity check on good images
+- Deletion test: mask heatmap zone, verify prediction drop
+- outputs/results/gradcam/ with saved figures
+- docs/paper_draft.md: Section 3.6 Grad-CAM Analysis added
+```
+**Quando**: dopo aver ottenuto pointing accuracy > 50% e almeno 6 figure chiare
+
+**Dipendenze**:
+- `outputs/checkpoints/efficientnet_metal_nut.pt` — deve esistere (da commit 6/12)
+- `data/mvtec_ad/metal_nut/test/*/ground_truth/` — ground truth masks MVTec
+- `pip install grad-cam` installato nel venv
+
+**Layer target verificato** (da controllare con `print(model.backbone)` prima di hardcodare):
+```python
+target_layers = [model.backbone.features[-1]]
+```
+
+**Test di accettazione** (il commit è pronto quando):
+- [ ] Pointing accuracy ≥ 50% su metal_nut defective
+- [ ] Heatmap su immagini `good` non si concentra su zona fissa
+- [ ] Deletion test: prob cala ≥ 15 pp quando la zona heatmap è mascherata
+- [ ] Figure salvate in `outputs/results/gradcam/`
+- [ ] Section 3.6 aggiunta al paper con il numero di pointing accuracy reale
+
+---
+
+## Commit 14 — (Opzionale) Gradio demo
 ```
 feat: interactive web demo with Gradio
 
 - app.py: Gradio interface for image upload and inference
-- Real-time zone check visualization
+- Category and model selection (HOG or EfficientNet)
+- Output: verdict, defect probability, ROI overlay, Grad-CAM heatmap
 - Deploy-ready for HuggingFace Spaces
 ```
-**Quando**: solo se avanza tempo dopo il commit 9
+**Quando**: solo se avanza tempo dopo il commit 13
 
 ---
 
@@ -169,14 +204,17 @@ feat: interactive web demo with Gradio
 
 | Commit | Status |
 |---|---|
-| 1 — Project setup | ⬜ Da fare |
-| 2 — Dataset & exploration | ⬜ Da fare |
-| 3 — Preprocessing | ⬜ Da fare |
-| 4 — Classical baseline | ⬜ Da fare |
-| 5 — Evaluation framework | ⬜ Da fare |
-| 6 — Deep learning | ⬜ Da fare |
-| 7 — Results comparison | ⬜ Da fare |
-| 8 — Zone check | ⬜ Da fare |
-| 9 — Pipeline integration | ⬜ Da fare |
-| 10 — Documentation | ⬜ Da fare |
-| 11 — Gradio demo (opz.) | ⬜ Opzionale |
+| 1 — Project setup | ✅ |
+| 2 — Dataset & exploration | ✅ |
+| 3 — Preprocessing | ✅ |
+| 4 — Classical baseline | ✅ |
+| 5 — Evaluation framework | ✅ |
+| 6 — Deep learning | ✅ |
+| 7 — Results comparison | ✅ |
+| 8 — Zone check | ✅ |
+| 9 — Per-category evaluation | ✅ |
+| 10 — Pipeline integration | ✅ |
+| 11 — Documentation | ✅ |
+| 12 — EfficientNet texture categories | ✅ |
+| 13 — Grad-CAM explainability | ⬜ Next |
+| 14 — Gradio demo (opz.) | ⬜ Opzionale |

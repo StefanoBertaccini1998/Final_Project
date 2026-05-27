@@ -16,3 +16,6 @@ tqdm>=4.65.0
 #   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 torch>=2.6.0
 torchvision>=0.21.0
+
+# Grad-CAM explainability (Commit 13)
+grad-cam>=1.5.0

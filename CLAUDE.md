@@ -186,10 +186,62 @@ python src/check_setup.py
 - Checkpoint salvati in `outputs/checkpoints/efficientnet_{category}.pt` (ora inclusi nel repo)
 - `.gitignore` aggiornato: checkpoint .pt e .pkl ora committati per demo standalone
 
-### ⬜ Next Step — Commit 13 (opzionale)
-Demo interattiva Gradio:
+### ⬜ Next Step — Commit 13: Grad-CAM explainability
+
+Aggiungere interpretabilità visiva al modello EfficientNet-B0 tramite Grad-CAM.
+Risponde alla domanda: *"dove ha guardato il modello per decidere che questo pezzo è difettoso?"*
+
+#### Setup
+```bash
+pip install grad-cam --break-system-packages
+# oppure: pip install pytorch-grad-cam
+```
+
+#### Layer target in EfficientNet-B0 (torchvision)
+Il modello `DeepClassifier` in `src/models/deep.py` wrappa `efficientnet_b0` di torchvision.
+Il layer corretto è l'ultimo blocco convoluzionale prima del pooling globale:
+```python
+# Verifica con print(model.backbone) per vedere la struttura esatta prima di hardcodare
+target_layers = [model.backbone.features[-1]]
+```
+
+#### Libreria
+Usare `pytorch_grad_cam` (Jacob Gildenblat) — supporta nativamente EfficientNet e torchvision:
+```python
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+```
+
+#### Notebook da creare: `notebooks/10_gradcam_visualization.ipynb`
+
+Struttura richiesta:
+1. Carica checkpoint da `outputs/checkpoints/efficientnet_metal_nut.pt`
+2. Seleziona 6 immagini: 2 `good`, 2 defective con difetti visibili (`bent`, `scratch`), 2 difetti sottili (`color`, `flip`)
+3. Per ogni immagine: mostra `[originale | heatmap sovrapposta | predizione + probabilità]`
+4. Per le immagini defective: carica la ground truth mask da `test/<defect_type>/ground_truth/` e sovrapponila come contorno verde
+5. Calcola **pointing accuracy**: % di immagini dove `argmax(heatmap)` cade dentro la GT mask (target: > 60%)
+6. **Sanity check** su immagini `good`: la heatmap non deve concentrarsi su una zona fissa
+7. **Deletion test** su 2-3 immagini: maschera la zona heatmap con rumore gaussiano, riclassifica, verifica che la probabilità cali significativamente
+
+#### Output atteso
+- Figure salvate in `outputs/results/gradcam/` (originale, heatmap, overlay GT), `dpi=150`
+- Stampa a fine notebook: `Pointing accuracy: X/Y (Z%)`
+
+#### Aggiornamento paper dopo il notebook
+In `docs/paper_draft.md`:
+- Section 2.4: sostituire `*[Add training curves...]*` con riferimento a notebook 05
+- Aggiungere **Section 3.6 — Grad-CAM Analysis**: figura migliore + pointing accuracy ottenuto
+- Section 4.4 Proposed Improvements: aggiornare con risultato reale (Grad-CAM implementato ✅)
+
+#### Convenzioni (come sempre)
+- Type hints e docstring WHY su eventuali helper estratti
+- Costante named: `GRADCAM_ALPHA = 0.4` per trasparenza overlay
+- Salva figure a `dpi=150`
+
+### ⬜ Commit 14 (opzionale) — Gradio demo
 - `app.py`: interfaccia web — upload immagine, selezione categoria e modello, output verdict
-- Visualizzazione overlay ROI + bounding box
+- Visualizzazione overlay ROI + heatmap Grad-CAM
 - Deploy-ready per HuggingFace Spaces
 
 ---
@@ -210,7 +262,8 @@ Demo interattiva Gradio:
 | 10 | `feat: end-to-end pipeline integration` | ✅ |
 | 11 | `docs: technical analysis and README` | ✅ |
 | 12 | `feat: EfficientNet on texture categories` | ✅ |
-| 13 | `feat: Gradio demo (optional)` | ⬜ Next (opt) |
+| 13 | `feat: Grad-CAM explainability` | ⬜ Next |
+| 14 | `feat: Gradio demo (optional)` | ⬜ opt |
 
 Full details in `COMMITS.md`.
 

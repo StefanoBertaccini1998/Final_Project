@@ -189,12 +189,17 @@ def _roi_overlay(image_float: np.ndarray) -> np.ndarray:
 
 
 def _preprocess_image(image: np.ndarray) -> np.ndarray:
-    """Save to temp file and run preprocess() pipeline (includes denoising)."""
+    """Save to temp file and run preprocess() pipeline (includes denoising).
+
+    Used only for user-uploaded images. Gallery images use _preprocess_path()
+    to avoid Gradio thumbnail downscaling corrupting HOG features.
+    """
     import tempfile
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
         tmp_path = tmp.name
     try:
         Image.fromarray(image).convert("RGB").save(tmp_path)
+        log.info("preprocess_image: saved array shape=%s to tempfile, calling preprocess()", image.shape)
         return preprocess(tmp_path)   # float32 [0,1] 224×224, denoised
     finally:
         os.unlink(tmp_path)
@@ -220,8 +225,13 @@ def get_gallery_images(category: str) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 # Main classify function (fast — no Grad-CAM)
 # ---------------------------------------------------------------------------
-def classify(image: np.ndarray | None, category: str) -> tuple:
-    """Run HOG+SVM and EfficientNet (forward only). Returns results + stored image_float."""
+def classify(image: np.ndarray | None, category: str, gallery_path: str | None = None) -> tuple:
+    """Run HOG+SVM and EfficientNet (forward only). Returns results + stored image_float.
+
+    gallery_path: original on-disk path of the selected gallery image.
+    When set, preprocess() is called directly on that file, bypassing the
+    numpy→tempfile→preprocess round-trip that Gradio thumbnail downscaling corrupts.
+    """
     empty = np.zeros((224, 224, 3), dtype=np.uint8)
 
     if image is None:
@@ -231,7 +241,12 @@ def classify(image: np.ndarray | None, category: str) -> tuple:
             None,                  # image_float state (no image to store)
         )
 
-    image_float = _preprocess_image(image)
+    if gallery_path and Path(gallery_path).exists():
+        log.info("classify: using original gallery file %s", gallery_path)
+        image_float = preprocess(gallery_path)
+    else:
+        log.info("classify: uploaded image array shape=%s", image.shape)
+        image_float = _preprocess_image(image)
 
     # ROI check
     roi_img = _roi_overlay(image_float)
@@ -294,8 +309,11 @@ with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) 
         "or upload your own image."
     )
 
-    # Hidden state: stores the preprocessed float image for deferred GradCAM
+    # Hidden state: preprocessed float image for deferred GradCAM
     image_float_state = gr.State(None)
+    # Hidden state: original on-disk path of the last gallery selection
+    # (bypasses Gradio thumbnail downscaling that corrupts HOG features)
+    gallery_path_state = gr.State(None)
 
     with gr.Row():
         # ── Left column: input controls ────────────────────────────────────
@@ -342,16 +360,32 @@ with gr.Blocks(title="Smart Factory Vision Monitor", theme=gr.themes.Default()) 
     def update_gallery(category: str):
         return gr.Gallery(value=get_gallery_images(category))
 
-    def load_from_gallery(evt: gr.SelectData) -> np.ndarray:
-        path = evt.value["image"]["path"] if isinstance(evt.value, dict) else evt.value
-        return np.array(Image.open(path).convert("RGB"))
+    def load_from_gallery(evt: gr.SelectData, category: str):
+        # Resolve original on-disk path via evt.index — avoids Gradio's
+        # thumbnail cache, which downsizes images and corrupts HOG features.
+        originals = get_gallery_images(category)
+        original_path = originals[evt.index][0] if evt.index < len(originals) else None
+        log.info("gallery_select: index=%d original_path=%s", evt.index, original_path)
+        src = original_path or (
+            evt.value["image"]["path"] if isinstance(evt.value, dict) else evt.value
+        )
+        return np.array(Image.open(src).convert("RGB")), original_path
+
+    def clear_gallery_path():
+        return None
 
     category_dd.change(fn=update_gallery, inputs=category_dd, outputs=gallery)
-    gallery.select(fn=load_from_gallery, outputs=image_input)
+    gallery.select(
+        fn=load_from_gallery,
+        inputs=[category_dd],
+        outputs=[image_input, gallery_path_state],
+    )
+    # Clear the stored gallery path when the user uploads their own image
+    image_input.upload(fn=clear_gallery_path, outputs=[gallery_path_state])
 
     run_btn.click(
         fn=classify,
-        inputs=[image_input, category_dd],
+        inputs=[image_input, category_dd, gallery_path_state],
         outputs=[roi_out, hog_verdict_out, hog_prob_out,
                  gradcam_out, enet_verdict_out, enet_prob_out, warning_out,
                  image_float_state],

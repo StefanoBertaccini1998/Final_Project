@@ -200,12 +200,27 @@ python src/check_setup.py
 - Figure salvate in `outputs/results/gradcam/` a dpi=150
 - `docs/paper_draft.md` Section 3.6 aggiornata con numeri reali
 
-### ⬜ Next Step — Commit 14 (opzionale): Gradio demo "comparativa"
-- `app.py`: interfaccia web con tab HOG+SVM vs EfficientNet side-by-side
-- Upload immagine + selezione categoria → entrambi i modelli classificano in parallelo
-- Output: verdict (PASS/REJECT), probabilità, overlay ROI, heatmap Grad-CAM (solo EfficientNet)
-- Deploy-ready per HuggingFace Spaces
-- Richiede checkpoints salvati in `outputs/checkpoints/` (disponibili dopo aver eseguito notebooks 03 + 05)
+### ✅ Done (Commit 14 — Gradio demo)
+- `app.py`: interfaccia comparativa HOG+SVM vs EfficientNet, gallery MVTec integrata, Grad-CAM, low-confidence banner
+- `Dockerfile` + `railway.toml`: deploy su Railway con PyTorch CPU-only
+- `examples/`: 28 immagini (4 per categoria: 2 good + 2 defective)
+- Deploy attivo su Railway
+
+### ✅ Done (Commit 15 — Model improvement V2)
+- `notebooks/11_model_improvement.ipynb`: weighted loss + extended fine-tuning con tracking completo V1→V2
+- **Diagnosi**: class imbalance 2.6:1 → CrossEntropyLoss favorisce la classe majority
+- **Fix**: `CrossEntropyLoss(weight=[1.0, 2.60])` + Phase 2 estesa 10→20 epoche
+- **Risultati V2 vs V1**:
+  - V1 t=0.5: F1=0.634, Recall=46%, FN=15/28
+  - V1 t=0.3: F1=0.766, Recall=64%
+  - **V2 t=0.5: F1=0.792, Recall=68%, Precision=95%, FN=8/28** ← best
+  - V2 t=0.3: F1=0.702, Recall=71%, Precision=69%
+- Checkpoint V2 promosso a `efficientnet_metal_nut.pt` (V2 best F1=0.792 > V1 best F1=0.766)
+- Demo aggiornata: threshold 0.3→0.5 (weighted loss non richiede più threshold tuning)
+
+### ⬜ Next Step
+- `git push origin main` per aggiornare Railway con V2 checkpoint e demo fix
+- Aggiornare `docs/paper_draft.md` con risultati V2 (Section 3.2 e nuova Section 3.7)
 
 ---
 
@@ -226,7 +241,8 @@ python src/check_setup.py
 | 11 | `docs: technical analysis and README` | ✅ |
 | 12 | `feat: EfficientNet on texture categories` | ✅ |
 | 13 | `feat: Grad-CAM explainability` | ✅ |
-| 14 | `feat: Gradio demo (optional)` | ⬜ Next (opt) |
+| 14 | `feat: Gradio demo (optional)` | ✅ |
+| 15 | `feat: model improvement -- weighted loss, V1 vs V2` | ✅ |
 
 Full details in `COMMITS.md`.
 

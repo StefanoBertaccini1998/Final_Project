@@ -60,7 +60,7 @@ access_token
 # ======================
 # OUTPUT — generati dai notebook, non committare
 # Il docente esegue i notebook per vedere i risultati in tempo reale.
+# I checkpoint (.pt, .pkl) sono inclusi per la Gradio demo standalone.
 # ======================
 outputs/results/
-outputs/checkpoints/
 *.log

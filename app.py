@@ -125,55 +125,71 @@ def _load_enet(category: str) -> DeepClassifier | None:
 # ---------------------------------------------------------------------------
 # Inference helpers
 # ---------------------------------------------------------------------------
+def _error_html(msg: str) -> str:
+    return (
+        f"<div style='background:#f8d7da;border:1px solid #f5c2c7;border-radius:6px;"
+        f"padding:10px;margin-top:8px;font-size:14px'>"
+        f"❌ <b>Error</b>: {msg}</div>"
+    )
+
+
 def _hog_classify(image_float: np.ndarray, category: str) -> tuple[str, float] | None:
     """Return (verdict, prob) for HOG+SVM, or None if no checkpoint."""
-    clf = _load_hog(category)
-    if clf is None:
-        return None
-    from src.features import extract_hog
-    feat = extract_hog(image_float).reshape(1, -1)
-    full_proba = clf.predict_proba(feat)
-    prob = float(full_proba[0, 1])
-    verdict = "REJECT" if prob >= 0.5 else "PASS"
-    log.info("HOG [%s] feat_mean=%.4f feat_std=%.4f proba=%s classes=%s -> %s",
-             category, float(feat.mean()), float(feat.std()),
-             full_proba[0].round(3).tolist(), clf.model.classes_.tolist(), verdict)
-    return verdict, prob
+    try:
+        clf = _load_hog(category)
+        if clf is None:
+            return None
+        from src.features import extract_hog
+        feat = extract_hog(image_float).reshape(1, -1)
+        full_proba = clf.predict_proba(feat)
+        prob = float(full_proba[0, 1])
+        verdict = "REJECT" if prob >= 0.5 else "PASS"
+        log.info("HOG [%s] feat_mean=%.4f feat_std=%.4f proba=%s classes=%s -> %s",
+                 category, float(feat.mean()), float(feat.std()),
+                 full_proba[0].round(3).tolist(), clf.model.classes_.tolist(), verdict)
+        return verdict, prob
+    except Exception as e:
+        log.error("HOG inference failed [%s]: %s", category, e, exc_info=True)
+        return "ERROR", 0.0
 
 
 def _enet_classify_fast(image_float: np.ndarray, category: str) -> tuple[str, float]:
     """Forward pass only — no GradCAM. Returns (verdict, prob)."""
-    model = _load_enet(category)
-    if model is None:
-        return "N/A", 0.0
-
-    img_u8 = (image_float * 255).astype(np.uint8)
-    tensor = get_transforms(train=False)(img_u8).unsqueeze(0).to(DEVICE)
-
-    with torch.no_grad():
-        prob = float(torch.softmax(model(tensor), dim=1)[0, 1].item())
-
-    verdict = "REJECT" if prob >= ENET_THRESHOLD else "PASS"
-    return verdict, prob
+    try:
+        model = _load_enet(category)
+        if model is None:
+            return "N/A", 0.0
+        img_u8 = (image_float * 255).astype(np.uint8)
+        tensor = get_transforms(train=False)(img_u8).unsqueeze(0).to(DEVICE)
+        with torch.no_grad():
+            prob = float(torch.softmax(model(tensor), dim=1)[0, 1].item())
+        verdict = "REJECT" if prob >= ENET_THRESHOLD else "PASS"
+        log.info("ENet [%s] prob=%.4f threshold=%.2f -> %s", category, prob, ENET_THRESHOLD, verdict)
+        return verdict, prob
+    except Exception as e:
+        log.error("EfficientNet inference failed [%s]: %s", category, e, exc_info=True)
+        return "ERROR", 0.0
 
 
 def _enet_gradcam(image_float: np.ndarray, category: str) -> np.ndarray | None:
     """Grad-CAM backward pass only. Returns RGB overlay or None."""
-    if not GRADCAM_AVAILABLE or category not in _gradcam_objects:
+    try:
+        if not GRADCAM_AVAILABLE or category not in _gradcam_objects:
+            log.warning("GradCAM unavailable for [%s] (available=%s)", category, GRADCAM_AVAILABLE)
+            return None
+        model = _load_enet(category)
+        if model is None:
+            return None
+        img_u8 = (image_float * 255).astype(np.uint8)
+        tensor = get_transforms(train=False)(img_u8).unsqueeze(0).to(DEVICE)
+        cam = _gradcam_objects[category]
+        with torch.enable_grad():
+            heatmap = cam(input_tensor=tensor, targets=[ClassifierOutputTarget(1)])[0]
+        log.info("GradCAM [%s] heatmap min=%.3f max=%.3f", category, float(heatmap.min()), float(heatmap.max()))
+        return show_cam_on_image(image_float.astype(np.float32), heatmap, use_rgb=True, image_weight=1 - GRADCAM_ALPHA)
+    except Exception as e:
+        log.error("GradCAM failed [%s]: %s", category, e, exc_info=True)
         return None
-
-    # Ensure model is loaded (may not be if gradcam called before classify)
-    model = _load_enet(category)
-    if model is None:
-        return None
-
-    img_u8 = (image_float * 255).astype(np.uint8)
-    tensor = get_transforms(train=False)(img_u8).unsqueeze(0).to(DEVICE)
-
-    cam = _gradcam_objects[category]
-    with torch.enable_grad():
-        heatmap = cam(input_tensor=tensor, targets=[ClassifierOutputTarget(1)])[0]
-    return show_cam_on_image(image_float.astype(np.float32), heatmap, use_rgb=True, image_weight=1 - GRADCAM_ALPHA)
 
 
 def _roi_overlay(image_float: np.ndarray) -> np.ndarray:
@@ -244,47 +260,58 @@ def classify(image: np.ndarray | None, category: str, gallery_path: str | None =
             None,                  # image_float state (no image to store)
         )
 
-    if gallery_path and Path(gallery_path).exists():
-        log.info("classify: using original gallery file %s", gallery_path)
-        image_float = preprocess(gallery_path)
-    else:
-        log.info("classify: uploaded image array shape=%s", image.shape)
-        image_float = _preprocess_image(image)
+    try:
+        if gallery_path and Path(gallery_path).exists():
+            log.info("classify: using original gallery file %s", gallery_path)
+            image_float = preprocess(gallery_path)
+        else:
+            log.info("classify: uploaded image array shape=%s", image.shape)
+            image_float = _preprocess_image(image)
 
-    # ROI check
-    roi_img = _roi_overlay(image_float)
+        # ROI check
+        roi_img = _roi_overlay(image_float)
 
-    # HOG + SVM
-    hog_result = _hog_classify(image_float, category)
-    if hog_result is None:
-        hog_verdict = "N/A"
-        hog_prob_str = "No HOG model for this category"
-    else:
-        hog_verdict, hog_prob = hog_result
-        hog_prob_str = f"{hog_prob:.1%}"
+        # HOG + SVM
+        hog_result = _hog_classify(image_float, category)
+        if hog_result is None:
+            hog_verdict = "N/A"
+            hog_prob_str = "No HOG model for this category"
+        elif hog_result[0] == "ERROR":
+            hog_verdict = "ERROR"
+            hog_prob_str = "Inference failed — see logs"
+        else:
+            hog_verdict, hog_prob = hog_result
+            hog_prob_str = f"{hog_prob:.1%}"
 
-    # EfficientNet — forward pass only (fast)
-    enet_verdict, enet_prob = _enet_classify_fast(image_float, category)
-    enet_prob_str = f"{enet_prob:.1%}  (threshold {ENET_THRESHOLD:.0%})"
+        # EfficientNet — forward pass only (fast)
+        enet_verdict, enet_prob = _enet_classify_fast(image_float, category)
+        if enet_verdict == "ERROR":
+            enet_prob_str = "Inference failed — see logs"
+            warning_html = _error_html("EfficientNet inference failed. Check Railway logs.")
+        else:
+            enet_prob_str = f"{enet_prob:.1%}  (threshold {ENET_THRESHOLD:.0%})"
+            warning_html = ""
+            if LOW_CONF_LOW <= enet_prob <= LOW_CONF_HIGH:
+                warning_html = (
+                    "<div style='background:#fff3cd;border:1px solid #ffc107;"
+                    "border-radius:6px;padding:10px;margin-top:8px;font-size:14px'>"
+                    "⚠️ <b>Low confidence</b> — result may be unreliable on "
+                    "out-of-distribution images.</div>"
+                )
 
-    # Low-confidence warning
-    warning_html = ""
-    if LOW_CONF_LOW <= enet_prob <= LOW_CONF_HIGH:
-        warning_html = (
-            "<div style='background:#fff3cd;border:1px solid #ffc107;"
-            "border-radius:6px;padding:10px;margin-top:8px;font-size:14px'>"
-            "⚠️ <b>Low confidence</b> — result may be unreliable on "
-            "out-of-distribution images.</div>"
+        # Grad-CAM placeholder: show preprocessed image until user requests heatmap
+        gradcam_placeholder = (image_float * 255).astype(np.uint8)
+
+        return (
+            roi_img, hog_verdict, hog_prob_str,
+            gradcam_placeholder, enet_verdict, enet_prob_str, warning_html,
+            image_float,
         )
 
-    # Grad-CAM placeholder: show preprocessed image until user requests heatmap
-    gradcam_placeholder = (image_float * 255).astype(np.uint8)
-
-    return (
-        roi_img, hog_verdict, hog_prob_str,
-        gradcam_placeholder, enet_verdict, enet_prob_str, warning_html,
-        image_float,   # stored in gr.State for deferred GradCAM
-    )
+    except Exception as e:
+        log.error("classify failed [%s]: %s", category, e, exc_info=True)
+        error_html = _error_html(f"Classification failed: {e}")
+        return (empty, "ERROR", str(e), empty, "ERROR", str(e), error_html, None)
 
 
 # ---------------------------------------------------------------------------
@@ -293,11 +320,17 @@ def classify(image: np.ndarray | None, category: str, gallery_path: str | None =
 def run_gradcam(image_float: np.ndarray | None, category: str) -> np.ndarray:
     """Run Grad-CAM on the last classified image (stored in state)."""
     if image_float is None:
+        log.warning("run_gradcam called with no stored image — classify first")
         return np.zeros((224, 224, 3), dtype=np.uint8)
-    overlay = _enet_gradcam(image_float, category)
-    if overlay is None:
+    try:
+        overlay = _enet_gradcam(image_float, category)
+        if overlay is None:
+            log.warning("GradCAM returned None for [%s] — returning plain image", category)
+            return (image_float * 255).astype(np.uint8)
+        return overlay
+    except Exception as e:
+        log.error("run_gradcam failed [%s]: %s", category, e, exc_info=True)
         return (image_float * 255).astype(np.uint8)
-    return overlay
 
 
 # ---------------------------------------------------------------------------

@@ -168,12 +168,16 @@ def classify(image: np.ndarray | None, category: str) -> tuple:
             empty, "—", "—", "",      # gradcam, enet_verdict, enet_prob, warning
         )
 
-    # Preprocess: PIL numpy (H,W,3 uint8) → float32 [0,1] 224×224
-    if image.dtype != np.float32:
-        pil = Image.fromarray(image).convert("RGB").resize((224, 224))
-        image_float = np.array(pil, dtype=np.float32) / 255.0
-    else:
-        image_float = image
+    # Use the same preprocess() pipeline the models were trained on (includes denoising).
+    # preprocess() expects a file path, so save to a temp PNG first.
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        Image.fromarray(image).convert("RGB").save(tmp_path)
+        image_float = preprocess(tmp_path)   # float32 [0,1] 224×224, denoised
+    finally:
+        os.unlink(tmp_path)
 
     # ROI check
     roi_img = _roi_overlay(image_float)

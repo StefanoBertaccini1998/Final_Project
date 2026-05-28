@@ -66,11 +66,21 @@ CATEGORIES = ["metal_nut", "carpet", "leather", "wood", "tile", "grid", "cable"]
 # HOG+SVM checkpoint available only for metal_nut
 HOG_CATEGORIES = ["metal_nut"]
 
-# V2 model (weighted loss) performs best at t=0.5: F1=0.792, Precision=0.950.
-# Threshold tuning was a workaround for V1's class-imbalance bias; V2 no longer needs it.
-ENET_THRESHOLD = 0.5
-LOW_CONF_LOW  = 0.35
-LOW_CONF_HIGH = 0.65
+# metal_nut V2 was trained with weighted loss — optimal threshold is 0.5.
+# Texture-category models (notebook 09) have no weighted loss fix, so they
+# retain the class-imbalance bias toward PASS. t=0.3 corrects this, matching
+# the threshold used when F1 was measured in notebook 09.
+ENET_THRESHOLD_BY_CAT: dict[str, float] = {
+    "metal_nut": 0.5,
+    "carpet":    0.3,
+    "leather":   0.3,
+    "wood":      0.3,
+    "tile":      0.3,
+    "grid":      0.3,
+    "cable":     0.3,
+}
+LOW_CONF_LOW  = 0.25
+LOW_CONF_HIGH = 0.55
 
 GRADCAM_ALPHA = 0.5  # image/heatmap blend — 0.5 gives equal weight to both
 
@@ -179,8 +189,9 @@ def _enet_classify_fast(image_float: np.ndarray, category: str) -> tuple[str, fl
         tensor = get_transforms(train=False)(img_u8).unsqueeze(0).to(DEVICE)
         with torch.no_grad():
             prob = float(torch.softmax(model(tensor), dim=1)[0, 1].item())
-        verdict = "REJECT" if prob >= ENET_THRESHOLD else "PASS"
-        log.info("ENet [%s] prob=%.4f threshold=%.2f -> %s", category, prob, ENET_THRESHOLD, verdict)
+        threshold = ENET_THRESHOLD_BY_CAT.get(category, 0.5)
+        verdict = "REJECT" if prob >= threshold else "PASS"
+        log.info("ENet [%s] prob=%.4f threshold=%.2f -> %s", category, prob, threshold, verdict)
         return verdict, prob
     except Exception as e:
         log.error("EfficientNet inference failed [%s]: %s", category, e, exc_info=True)
@@ -301,11 +312,12 @@ def classify(image: np.ndarray | None, category: str, gallery_path: str | None =
 
         # EfficientNet — forward pass only (fast)
         enet_verdict, enet_prob = _enet_classify_fast(image_float, category)
+        threshold = ENET_THRESHOLD_BY_CAT.get(category, 0.5)
         if enet_verdict == "ERROR":
             enet_prob_str = "Inference failed — see logs"
             warning_html = _error_html("EfficientNet inference failed. Check Railway logs.")
         else:
-            enet_prob_str = f"{enet_prob:.1%}  (threshold {ENET_THRESHOLD:.0%})"
+            enet_prob_str = f"{enet_prob:.1%}  (threshold {threshold:.0%})"
             warning_html = ""
             if LOW_CONF_LOW <= enet_prob <= LOW_CONF_HIGH:
                 warning_html = _warn_html(
@@ -480,7 +492,7 @@ with gr.Blocks(
                         "<div class='model-header' style='color:#15803d;'>"
                         "EfficientNet-B0 V2"
                         "<span style='font-size:11px;font-weight:400;color:#9ca3af;"
-                        "margin-left:8px;'>weighted loss &middot; threshold 0.5</span></div>"
+                        "margin-left:8px;'>weighted loss &middot; threshold shown below</span></div>"
                     )
                     enet_verdict_out = gr.Label(label="Verdict")
                     enet_prob_out    = gr.Textbox(

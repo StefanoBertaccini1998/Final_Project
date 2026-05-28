@@ -72,7 +72,7 @@ ENET_THRESHOLD = 0.5
 LOW_CONF_LOW  = 0.35
 LOW_CONF_HIGH = 0.65
 
-GRADCAM_ALPHA = 0.4
+GRADCAM_ALPHA = 0.5  # image/heatmap blend — 0.5 gives equal weight to both
 
 # ---------------------------------------------------------------------------
 # Model cache — loaded once at startup
@@ -202,7 +202,7 @@ def _enet_gradcam(image_float: np.ndarray, category: str) -> np.ndarray | None:
         with torch.enable_grad():
             heatmap = cam(input_tensor=tensor, targets=[ClassifierOutputTarget(1)])[0]
         log.info("GradCAM [%s] heatmap min=%.3f max=%.3f", category, float(heatmap.min()), float(heatmap.max()))
-        return show_cam_on_image(image_float.astype(np.float32), heatmap, use_rgb=True, image_weight=1 - GRADCAM_ALPHA)
+        return show_cam_on_image(image_float.astype(np.float32), heatmap, use_rgb=True, image_weight=0.5)
     except Exception as e:
         log.error("GradCAM failed [%s]: %s", category, e, exc_info=True)
         return None

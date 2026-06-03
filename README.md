@@ -3,13 +3,18 @@
 > Introduction to Computer Vision — EPICODE Institute of Technology  
 > Student: Stefano Bertaccini | Exam: July 2026
 
+**🚀 Live demo: [https://finalproject-production-78f4.up.railway.app](https://finalproject-production-78f4.up.railway.app)**  
+Upload an image or pick one from the built-in MVTec gallery — HOG+SVM and EfficientNet run side-by-side with Grad-CAM overlay.
+
+---
+
 Automated visual defect detection for industrial parts. A fixed overhead camera
 captures images of manufactured components; the system classifies each part as
 **good** or **defective** and rejects parts that fall outside the expected zone.
 
 Two pipelines are implemented and compared:
 - **Classical baseline**: HOG features + SVM (fast, interpretable, no GPU needed)
-- **Deep learning**: EfficientNet-B0 fine-tuned via two-phase transfer learning
+- **Deep learning**: EfficientNet-B0 V2 fine-tuned via two-phase transfer learning + class-weighted loss
 
 Dataset: [MVTec Anomaly Detection](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 (15 industrial categories — primary evaluation on `metal_nut`)
@@ -23,8 +28,11 @@ Dataset: [MVTec Anomaly Detection](https://www.mvtec.com/company/research/datase
 | Model | Accuracy | F1 (defect) | Recall (defect) | Precision (defect) |
 |---|---|---|---|---|
 | HOG + SVM | 83.2% | 0.605 | 46.4% | 86.7% |
-| EfficientNet-B0 (t=0.5) | 88.1% | 0.727 | 57.1% | 100.0% |
-| EfficientNet-B0 (t=0.3) | **89.1%** | **0.784** | **71.4%** | 87.0% |
+| EfficientNet-B0 V1 (t=0.5) | 85.1% | 0.634 | 46.4% | 100.0% |
+| EfficientNet-B0 V2 (t=0.5) ★ | **88.1%** | **0.792** | **67.9%** | 95.0% |
+
+> ★ V2 introduces class-weighted loss `[1.0, 2.60]` to address the 2.6:1 good/defective imbalance.
+> False negatives reduced from 15 → 9 vs V1.
 
 > Recall is the primary safety-critical metric: a missed defect (False Negative)
 > has higher cost than a false alarm in industrial inspection.
@@ -72,7 +80,7 @@ Phase 2 adapts the backbone to industrial texture at a low learning rate.
 **Requirements**: Python 3.10+, CUDA 12.x (optional, CPU also works)
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/StefanoBertaccini1998/Final_Project.git
 cd Final_Project
 
 python -m venv venv
@@ -168,7 +176,8 @@ Final_Project/
 │   ├── checkpoints/         <- Saved model weights (NOT in repo)
 │   └── results/             <- Plots and metric tables
 ├── docs/
-│   └── paper_draft.md       <- Technical analysis document
+│   ├── technical_analysis.pdf  <- Technical analysis document (exam deliverable)
+│   └── paper_draft.md          <- Source markdown
 ├── requirements.txt
 └── SETUP.md
 ```

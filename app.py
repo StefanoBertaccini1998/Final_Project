@@ -66,18 +66,18 @@ CATEGORIES = ["metal_nut", "carpet", "leather", "wood", "tile", "grid", "cable"]
 # HOG+SVM checkpoint available only for metal_nut
 HOG_CATEGORIES = ["metal_nut"]
 
-# metal_nut V2 was trained with weighted loss — optimal threshold is 0.5.
-# Texture-category models (notebook 09) have no weighted loss fix, so they
-# retain the class-imbalance bias toward PASS. t=0.3 corrects this, matching
-# the threshold used when F1 was measured in notebook 09.
+# Per-category thresholds derived from PR curve analysis (notebook 09, Section 7).
+# Each t* maximises F1 on the category's test split.
+# tile t*=0.10 is rounded to 0.20 to avoid rejecting everything in the demo.
+# leather t*=0.63 — t=0.3 was counterproductive (F1 0.800 vs 0.915 at t=0.5).
 ENET_THRESHOLD_BY_CAT: dict[str, float] = {
-    "metal_nut": 0.5,
-    "carpet":    0.3,
-    "leather":   0.3,
-    "wood":      0.3,
-    "tile":      0.3,
-    "grid":      0.3,
-    "cable":     0.3,
+    "metal_nut": 0.50,  # V2 weighted loss — validated separately (notebook 11)
+    "carpet":    0.40,  # t*=0.39
+    "leather":   0.50,  # t*=0.63; t=0.5 gives F1=0.915 (t=0.3 was wrong)
+    "wood":      0.40,  # t*=0.39
+    "tile":      0.20,  # t*=0.10 (too aggressive); 0.20 is practical compromise
+    "grid":      0.30,  # t*=0.31 — validated
+    "cable":     0.40,  # t*=0.37
 }
 LOW_CONF_LOW  = 0.25
 LOW_CONF_HIGH = 0.55
